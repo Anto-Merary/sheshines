@@ -497,15 +497,16 @@
                 <div class="opacity-0 mb-6 inline-flex items-center gap-3 flex-wrap justify-center lg:justify-start"
                     data-reveal data-delay="200">
                     <div class="inline-flex items-center gap-2">
-                        <img src="RIT-HEAD.png" alt="RIT" class="h-7 md:h-9 w-auto">
-                        <span
-                            class="text-sm md:text-lg font-semibold uppercase tracking-[0.12em] text-white/90">RIT</span>
+                        <img src="RIT-HEAD.png" alt="RIT" class="w-auto" style="height: clamp(2rem, 4vw, 3rem);">
+                        <span class="font-semibold uppercase tracking-[0.12em] text-white/90"
+                            style="font-size: clamp(0.95rem, 2vw, 1.4rem);">RIT</span>
                     </div>
-                    <span class="text-white text-xl font-bold">-</span>
+                    <span class="text-white font-bold" style="font-size: clamp(1.2rem, 2.5vw, 1.6rem);">-</span>
                     <div class="inline-flex items-center gap-2">
-                        <img src="HEXT.NS.svg" alt="Hexaware" class="h-6 md:h-8 w-auto">
-                        <span
-                            class="text-sm md:text-lg font-semibold uppercase tracking-[0.12em] text-white/90">Hexaware</span>
+                        <img src="HEXT.NS.svg" alt="Hexaware" class="w-auto"
+                            style="height: clamp(1.8rem, 3.5vw, 2.8rem);">
+                        <span class="font-semibold uppercase tracking-[0.12em] text-white/90"
+                            style="font-size: clamp(0.95rem, 2vw, 1.4rem);">Hexaware</span>
                     </div>
                 </div>
 
@@ -716,7 +717,7 @@
                 }
 
                 // ===== SMOKE-INK COUNTDOWN =====
-                const countdownAudio = new Audio('audio.aac');
+                const countdownAudio = new Audio('audio.mpeg');
                 countdownAudio.preload = 'auto';
 
                 const smokeColorSets = [
