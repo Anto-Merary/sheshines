@@ -194,7 +194,7 @@
             text-transform: uppercase;
             color: white;
             background: transparent;
-            border: 2px solid rgba(255, 255, 255, 0.3);
+            border: 2px solid transparent;
             padding: 14px 36px;
             border-radius: 100px;
             cursor: pointer;
@@ -202,6 +202,7 @@
             overflow: hidden;
             transition: all 0.4s ease;
             backdrop-filter: blur(4px);
+            box-shadow: 0 0 40px rgba(242, 126, 82, 0.3), 0 0 80px rgba(153, 194, 232, 0.15);
         }
 
         #cta-btn::before {
@@ -213,7 +214,7 @@
             background-size: 300% 300%;
             animation: borderGlow 3s ease infinite;
             z-index: -1;
-            opacity: 0;
+            opacity: 1;
             transition: opacity 0.4s ease;
         }
 
@@ -227,13 +228,8 @@
         }
 
         #cta-btn:hover {
-            border-color: transparent;
             transform: scale(1.05);
-            box-shadow: 0 0 40px rgba(242, 126, 82, 0.3), 0 0 80px rgba(153, 194, 232, 0.15);
-        }
-
-        #cta-btn:hover::before {
-            opacity: 1;
+            box-shadow: 0 0 60px rgba(242, 126, 82, 0.45), 0 0 100px rgba(153, 194, 232, 0.25);
         }
 
         @keyframes borderGlow {
@@ -257,6 +253,7 @@
             color: rgba(255, 255, 255, 0.3);
             letter-spacing: 0.15em;
             animation: subtlePulse 2s ease-in-out infinite;
+            pointer-events: none;
         }
 
         @keyframes subtlePulse {
@@ -576,9 +573,11 @@
                 }
                 animate();
 
-                // ===== CLICK TO START =====
-                ctaBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
+                // ===== CLICK ANYWHERE TO START =====
+                let started = false;
+                introOverlay.addEventListener('click', () => {
+                    if (started) return;
+                    started = true;
                     startHyperspace();
                 });
 
@@ -868,7 +867,7 @@ void main(){
                 uniforms: {
                     iTime: { value: 0 },
                     iResolution: { value: new Float32Array([1, 1]) },
-                    uTimeSpeed: { value: 0.25 },
+                    uTimeSpeed: { value: 0.6 },
                     uColorBalance: { value: 0.0 },
                     uWarpStrength: { value: 1.0 },
                     uWarpFrequency: { value: 5.0 },
