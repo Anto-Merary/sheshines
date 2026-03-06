@@ -275,32 +275,145 @@
         #countdown-phase {
             position: absolute;
             inset: 0;
-            z-index: 20;
             display: none;
             overflow: hidden;
+            isolation: isolate;
         }
 
-        #countdown-video {
+        #smoke-canvas {
             position: absolute;
             inset: 0;
             width: 100%;
             height: 100%;
-            object-fit: cover;
         }
 
-        #countdown-text {
+        #countdown-text-container {
             position: absolute;
             inset: 0;
             display: flex;
             justify-content: center;
             align-items: center;
+        }
+
+        #countdown-text {
             font-family: 'Archivo Black', sans-serif;
-            font-size: clamp(6rem, 30vw, 35rem);
+            font-size: clamp(8rem, 30vw, 35rem);
             line-height: 1;
             color: white;
             mix-blend-mode: difference;
-            z-index: 25;
             user-select: none;
+            pointer-events: none;
+        }
+
+        .smoke-reveal {
+            animation: smokeIn 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+        }
+
+        .smoke-hide {
+            animation: smokeOut 0.35s ease-in forwards;
+        }
+
+        @keyframes smokeIn {
+            0% {
+                transform: scale(0.6);
+                opacity: 0;
+                filter: blur(40px);
+            }
+
+            40% {
+                filter: blur(12px);
+                opacity: 0.6;
+            }
+
+            70% {
+                transform: scale(1.05);
+                filter: blur(3px);
+                opacity: 0.9;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+                filter: blur(0px);
+            }
+        }
+
+        @keyframes smokeOut {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+                filter: blur(0px);
+            }
+
+            50% {
+                transform: scale(1.1);
+                filter: blur(10px);
+            }
+
+            100% {
+                transform: scale(1.3);
+                opacity: 0;
+                filter: blur(30px);
+            }
+        }
+
+        .countdown-shockwave {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 60px;
+            height: 60px;
+            margin-left: -30px;
+            margin-top: -30px;
+            border-radius: 50%;
+            border: 2px solid rgba(242, 126, 82, 0.6);
+            animation: shockwaveExpand 1.2s ease-out forwards;
+            pointer-events: none;
+        }
+
+        .countdown-shockwave-2 {
+            border-color: rgba(153, 194, 232, 0.4);
+            animation-delay: 0.1s;
+        }
+
+        @keyframes shockwaveExpand {
+            0% {
+                transform: scale(0);
+                opacity: 1;
+            }
+
+            60% {
+                opacity: 0.4;
+            }
+
+            100% {
+                transform: scale(35);
+                opacity: 0;
+            }
+        }
+
+        .countdown-beat-flash {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at center, rgba(242, 126, 82, 0.15), transparent 60%);
+            pointer-events: none;
+            animation: beatFlash 0.6s ease-out forwards;
+        }
+
+        @keyframes beatFlash {
+            0% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0;
+            }
+        }
+
+        .countdown-vignette {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at center, transparent 25%, rgba(0, 0, 0, 0.75) 100%);
             pointer-events: none;
         }
 
@@ -329,12 +442,6 @@
                 height: 14rem !important;
             }
         }
-
-        @media (max-width: 480px) {
-            #countdown-text {
-                font-size: clamp(5rem, 25vw, 10rem);
-            }
-        }
     </style>
 </head>
 
@@ -354,12 +461,13 @@
             <div id="cta-subtitle">SHESHINES AWAITS</div>
         </div>
 
-        <!-- Countdown Phase -->
+        <!-- Countdown Phase (Smoke-Ink) -->
         <div id="countdown-phase">
-            <video id="countdown-video" muted playsinline preload="auto">
-                <source src="Video Project.mp4" type="video/mp4">
-            </video>
-            <div id="countdown-text">10</div>
+            <canvas id="smoke-canvas"></canvas>
+            <div class="countdown-vignette"></div>
+            <div id="countdown-text-container">
+                <div id="countdown-text">10</div>
+            </div>
             <div id="flash-overlay"></div>
         </div>
     </div>
@@ -473,13 +581,11 @@
     <!-- ===== INTRO SEQUENCE SCRIPT ===== -->
     <script>
             (() => {
-                const canvas = document.getElementById('starfield-canvas');
-                const ctx = canvas.getContext('2d');
+                const starCanvas = document.getElementById('starfield-canvas');
+                const starCtx = starCanvas.getContext('2d');
                 const ctaContainer = document.getElementById('cta-container');
-                const ctaBtn = document.getElementById('cta-btn');
                 const countdownPhase = document.getElementById('countdown-phase');
                 const countdownText = document.getElementById('countdown-text');
-                const countdownVideo = document.getElementById('countdown-video');
                 const flashOverlay = document.getElementById('flash-overlay');
                 const introOverlay = document.getElementById('intro-overlay');
                 const mainContent = document.getElementById('main-content');
@@ -493,8 +599,8 @@
                 let animating = true;
 
                 function resize() {
-                    W = canvas.width = window.innerWidth;
-                    H = canvas.height = window.innerHeight;
+                    W = starCanvas.width = window.innerWidth;
+                    H = starCanvas.height = window.innerHeight;
                 }
                 window.addEventListener('resize', resize);
                 resize();
@@ -511,17 +617,14 @@
                 }
 
                 function drawStars() {
-                    ctx.fillStyle = '#000';
-                    ctx.fillRect(0, 0, W, H);
-
+                    starCtx.fillStyle = '#000';
+                    starCtx.fillRect(0, 0, W, H);
                     const cx = W / 2;
                     const cy = H / 2;
                     const speed = hyperspace ? hyperspaceSpeed : 1.5;
-
                     for (const star of stars) {
                         star.prevZ = star.z;
                         star.z -= speed;
-
                         if (star.z <= 0) {
                             star.x = Math.random() * W - W / 2;
                             star.y = Math.random() * H - H / 2;
@@ -529,53 +632,43 @@
                             star.prevZ = 1500;
                             star.brightness = Math.random();
                         }
-
-                        // Current projection
                         const sx = (star.x / star.z) * 400 + cx;
                         const sy = (star.y / star.z) * 400 + cy;
-
-                        // Previous projection (for streaks)
                         const psx = (star.x / star.prevZ) * 400 + cx;
                         const psy = (star.y / star.prevZ) * 400 + cy;
-
                         const size = Math.max(0.5, (1 - star.z / 1500) * 3);
-
                         if (hyperspace) {
-                            // Draw streaks during hyperspace
                             const alpha = Math.min(1, (1 - star.z / 1500) * 1.5);
-                            const hue = 200 + (star.brightness * 40); // blue-ish white streaks
-                            ctx.strokeStyle = `hsla(${hue}, 80%, 85%, ${alpha})`;
-                            ctx.lineWidth = size * 0.8;
-                            ctx.beginPath();
-                            ctx.moveTo(psx, psy);
-                            ctx.lineTo(sx, sy);
-                            ctx.stroke();
+                            const hue = 200 + (star.brightness * 40);
+                            starCtx.strokeStyle = `hsla(${hue}, 80%, 85%, ${alpha})`;
+                            starCtx.lineWidth = size * 0.8;
+                            starCtx.beginPath();
+                            starCtx.moveTo(psx, psy);
+                            starCtx.lineTo(sx, sy);
+                            starCtx.stroke();
                         } else {
-                            // Normal twinkling stars
                             const alpha = 0.4 + star.brightness * 0.6;
                             const twinkle = 0.7 + 0.3 * Math.sin(Date.now() * 0.003 + star.brightness * 100);
-                            ctx.fillStyle = `rgba(255, 255, 255, ${alpha * twinkle})`;
-                            ctx.beginPath();
-                            ctx.arc(sx, sy, size, 0, Math.PI * 2);
-                            ctx.fill();
-
-                            // Glow on bright stars
+                            starCtx.fillStyle = `rgba(255, 255, 255, ${alpha * twinkle})`;
+                            starCtx.beginPath();
+                            starCtx.arc(sx, sy, size, 0, Math.PI * 2);
+                            starCtx.fill();
                             if (star.brightness > 0.8) {
-                                ctx.fillStyle = `rgba(153, 194, 232, ${0.15 * twinkle})`;
-                                ctx.beginPath();
-                                ctx.arc(sx, sy, size * 3, 0, Math.PI * 2);
-                                ctx.fill();
+                                starCtx.fillStyle = `rgba(153, 194, 232, ${0.15 * twinkle})`;
+                                starCtx.beginPath();
+                                starCtx.arc(sx, sy, size * 3, 0, Math.PI * 2);
+                                starCtx.fill();
                             }
                         }
                     }
                 }
 
-                function animate() {
+                function animateStars() {
                     if (!animating) return;
                     drawStars();
-                    requestAnimationFrame(animate);
+                    requestAnimationFrame(animateStars);
                 }
-                animate();
+                animateStars();
 
                 // ===== CLICK ANYWHERE TO START =====
                 let started = false;
@@ -586,111 +679,250 @@
                 });
 
                 function startHyperspace() {
-                    // Fade out CTA
                     ctaContainer.style.transition = 'opacity 0.5s ease';
                     ctaContainer.style.opacity = '0';
                     ctaContainer.style.pointerEvents = 'none';
-
                     hyperspace = true;
                     hyperspaceSpeed = 2;
-
-                    // Ramp up hyperspace speed over ~2 seconds
                     const rampInterval = setInterval(() => {
                         hyperspaceSpeed = Math.min(hyperspaceSpeed + 3, 80);
                     }, 50);
 
-                    // After 2s of hyperspace, flash and go to countdown
                     setTimeout(() => {
                         clearInterval(rampInterval);
-
-                        // White flash
-                        flashOverlay.style.transition = 'opacity 0.15s ease-in';
-                        flashOverlay.style.opacity = '1';
-                        flashOverlay.parentElement // flash is inside countdown-phase, move to intro-overlay temporarily
                         introOverlay.appendChild(flashOverlay);
                         flashOverlay.style.zIndex = '100';
+                        flashOverlay.style.transition = 'opacity 0.15s ease-in';
                         flashOverlay.style.opacity = '1';
 
                         setTimeout(() => {
-                            // Stop starfield
                             animating = false;
-                            canvas.style.display = 'none';
-
-                            // Show countdown phase
+                            starCanvas.style.display = 'none';
                             countdownPhase.style.display = 'block';
-
-                            // Start video
-                            countdownVideo.play().catch(() => { });
-
-                            // Fade out flash
                             flashOverlay.style.transition = 'opacity 0.8s ease-out';
                             flashOverlay.style.opacity = '0';
-
-                            // Start countdown
-                            startCountdown();
+                            initSmokeCountdown();
                         }, 200);
                     }, 2200);
                 }
 
-                // ===== COUNTDOWN =====
+                // ===== SMOKE-INK COUNTDOWN =====
                 const countdownAudio = new Audio('audio.aac');
                 countdownAudio.preload = 'auto';
 
-                function startCountdown() {
-                    let count = 10;
-                    countdownText.textContent = count;
-                    countdownText.style.opacity = '1';
+                const smokeColorSets = [
+                    { r: 242, g: 126, b: 82 },
+                    { r: 153, g: 194, b: 232 },
+                    { r: 15, g: 68, b: 117 },
+                    { r: 200, g: 170, b: 220 },
+                    { r: 255, g: 200, b: 150 },
+                    { r: 100, g: 180, b: 255 },
+                ];
+                const smokeParticles = [];
+                const smokeEmbers = [];
+                let smokeTime = 0;
+                let smokeShake = 0;
+                let smokeCanvas, smokeCtx, sW, sH;
+                let smokeAnimating = false;
 
-                    // Play audio synced with countdown
+                class SmokeParticle {
+                    constructor(x, y, burst = false, intensity = 1) {
+                        this.x = x || sW / 2 + (Math.random() - 0.5) * sW * 0.4;
+                        this.y = y || sH / 2 + (Math.random() - 0.5) * sH * 0.4;
+                        const angle = Math.random() * Math.PI * 2;
+                        const speed = burst ? (2 + Math.random() * 8) * intensity : (0.2 + Math.random() * 1);
+                        this.vx = Math.cos(angle) * speed;
+                        this.vy = Math.sin(angle) * speed;
+                        this.life = 1;
+                        this.decay = burst ? (0.005 + Math.random() * 0.01) : (0.002 + Math.random() * 0.005);
+                        this.size = burst ? (20 + Math.random() * 50) * intensity : (30 + Math.random() * 70);
+                        this.maxSize = this.size * 3;
+                        this.rotation = Math.random() * Math.PI * 2;
+                        this.rotSpeed = (Math.random() - 0.5) * 0.015;
+                        const c = smokeColorSets[Math.floor(Math.random() * smokeColorSets.length)];
+                        this.r = c.r + Math.floor((Math.random() - 0.5) * 30);
+                        this.g = c.g + Math.floor((Math.random() - 0.5) * 30);
+                        this.b = c.b + Math.floor((Math.random() - 0.5) * 30);
+                        this.turbX = Math.random() * 1000;
+                        this.turbY = Math.random() * 1000;
+                        this.turbScale = 0.5 + Math.random() * 1;
+                    }
+                    update(t) {
+                        this.vx += Math.sin(t * 0.0008 + this.turbX) * this.turbScale * 0.03;
+                        this.vy += Math.cos(t * 0.0006 + this.turbY) * this.turbScale * 0.03 - 0.015;
+                        this.vx *= 0.985; this.vy *= 0.985;
+                        this.x += this.vx; this.y += this.vy;
+                        this.rotation += this.rotSpeed;
+                        this.life -= this.decay;
+                        if (this.life > 0.6) { this.size = Math.min(this.size + 0.8, this.maxSize); }
+                        else { this.size += 0.2; }
+                    }
+                    draw() {
+                        if (this.life <= 0) return;
+                        let alpha = this.life > 0.85 ? ((1 - this.life) / 0.15 * 0.15) : (this.life * 0.15);
+                        smokeCtx.save();
+                        smokeCtx.translate(this.x, this.y);
+                        smokeCtx.rotate(this.rotation);
+                        const grad = smokeCtx.createRadialGradient(0, 0, 0, 0, 0, this.size);
+                        grad.addColorStop(0, `rgba(${this.r},${this.g},${this.b},${alpha * 1.2})`);
+                        grad.addColorStop(0.3, `rgba(${this.r},${this.g},${this.b},${alpha * 0.7})`);
+                        grad.addColorStop(0.7, `rgba(${this.r},${this.g},${this.b},${alpha * 0.25})`);
+                        grad.addColorStop(1, `rgba(${this.r},${this.g},${this.b},0)`);
+                        smokeCtx.fillStyle = grad;
+                        smokeCtx.beginPath();
+                        const squash = 0.6 + Math.sin(this.rotation * 2) * 0.15;
+                        smokeCtx.ellipse(0, 0, this.size, this.size * squash, this.rotation * 0.3, 0, Math.PI * 2);
+                        smokeCtx.fill();
+                        smokeCtx.restore();
+                    }
+                }
+
+                class SmokeEmber {
+                    constructor() {
+                        this.x = sW / 2 + (Math.random() - 0.5) * sW * 0.6;
+                        this.y = sH * 0.8 + Math.random() * sH * 0.2;
+                        this.vx = (Math.random() - 0.5) * 0.5;
+                        this.vy = -(0.5 + Math.random() * 1.5);
+                        this.life = 1;
+                        this.decay = 0.005 + Math.random() * 0.01;
+                        this.size = 1 + Math.random() * 2;
+                        const isOrange = Math.random() > 0.4;
+                        this.r = isOrange ? 242 : 153;
+                        this.g = isOrange ? 126 : 194;
+                        this.b = isOrange ? 82 : 232;
+                    }
+                    update(t) {
+                        this.x += this.vx + Math.sin(t * 0.003 + this.x * 0.01) * 0.3;
+                        this.y += this.vy;
+                        this.life -= this.decay;
+                    }
+                    draw() {
+                        if (this.life <= 0) return;
+                        const a = this.life * 0.8;
+                        smokeCtx.fillStyle = `rgba(${this.r},${this.g},${this.b},${a})`;
+                        smokeCtx.shadowColor = `rgba(${this.r},${this.g},${this.b},${a * 0.5})`;
+                        smokeCtx.shadowBlur = 8;
+                        smokeCtx.beginPath();
+                        smokeCtx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                        smokeCtx.fill();
+                        smokeCtx.shadowBlur = 0;
+                    }
+                }
+
+                function burstSmoke(intensity = 1) {
+                    const n = Math.floor(30 * intensity);
+                    for (let i = 0; i < n; i++) {
+                        const a = (i / n) * Math.PI * 2 + Math.random() * 0.3;
+                        const d = 20 + Math.random() * 40;
+                        smokeParticles.push(new SmokeParticle(sW / 2 + Math.cos(a) * d, sH / 2 + Math.sin(a) * d, true, intensity));
+                    }
+                    for (let i = 0; i < 8; i++) smokeEmbers.push(new SmokeEmber());
+                }
+
+                function createCountdownShockwave() {
+                    const w1 = document.createElement('div');
+                    w1.className = 'countdown-shockwave';
+                    countdownPhase.appendChild(w1);
+                    setTimeout(() => w1.remove(), 1200);
+                    const w2 = document.createElement('div');
+                    w2.className = 'countdown-shockwave countdown-shockwave-2';
+                    countdownPhase.appendChild(w2);
+                    setTimeout(() => w2.remove(), 1300);
+                    const flash = document.createElement('div');
+                    flash.className = 'countdown-beat-flash';
+                    countdownPhase.appendChild(flash);
+                    setTimeout(() => flash.remove(), 600);
+                }
+
+                function animateSmoke() {
+                    if (!smokeAnimating) return;
+                    smokeCtx.fillStyle = 'rgba(5, 5, 5, 0.04)';
+                    smokeCtx.fillRect(0, 0, sW, sH);
+                    if (smokeShake > 0.5) {
+                        smokeCtx.save();
+                        smokeCtx.translate((Math.random() - 0.5) * smokeShake, (Math.random() - 0.5) * smokeShake);
+                        smokeShake *= 0.9;
+                    }
+                    if (Math.random() < 0.35 && smokeParticles.length < 400) {
+                        smokeParticles.push(new SmokeParticle(sW / 2 + (Math.random() - 0.5) * sW * 0.6, sH / 2 + (Math.random() - 0.5) * sH * 0.5));
+                    }
+                    if (smokeEmbers.length < 30 && Math.random() < 0.1) smokeEmbers.push(new SmokeEmber());
+                    for (let i = smokeParticles.length - 1; i >= 0; i--) {
+                        smokeParticles[i].update(smokeTime);
+                        smokeParticles[i].draw();
+                        if (smokeParticles[i].life <= 0) smokeParticles.splice(i, 1);
+                    }
+                    for (let i = smokeEmbers.length - 1; i >= 0; i--) {
+                        smokeEmbers[i].update(smokeTime);
+                        smokeEmbers[i].draw();
+                        if (smokeEmbers[i].life <= 0) smokeEmbers.splice(i, 1);
+                    }
+                    if (smokeShake > 0.5) smokeCtx.restore();
+                    smokeTime++;
+                    requestAnimationFrame(animateSmoke);
+                }
+
+                function triggerSmokeBeat(intensity = 1) {
+                    burstSmoke(intensity);
+                    createCountdownShockwave();
+                    smokeShake = 6 * intensity;
+                }
+
+                function initSmokeCountdown() {
+                    smokeCanvas = document.getElementById('smoke-canvas');
+                    smokeCtx = smokeCanvas.getContext('2d');
+                    sW = smokeCanvas.width = window.innerWidth;
+                    sH = smokeCanvas.height = window.innerHeight;
+                    smokeAnimating = true;
+                    animateSmoke();
+                    triggerSmokeBeat(0.5);
+
+                    // Play audio
                     countdownAudio.currentTime = 0;
                     countdownAudio.play().catch(() => { });
+
+                    let count = 10;
+                    countdownText.textContent = count;
+                    countdownText.classList.add('smoke-reveal');
 
                     const countInterval = setInterval(() => {
                         count--;
                         if (count > 0) {
-                            // Quick scale-punch animation
-                            countdownText.style.transition = 'none';
-                            countdownText.style.transform = 'scale(1.3)';
-                            countdownText.style.opacity = '0.5';
-
-                            requestAnimationFrame(() => {
-                                requestAnimationFrame(() => {
-                                    countdownText.style.transition = 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease';
-                                    countdownText.style.transform = 'scale(1)';
-                                    countdownText.style.opacity = '1';
-                                });
-                            });
-
-                            countdownText.textContent = count;
+                            countdownText.classList.remove('smoke-reveal');
+                            countdownText.classList.add('smoke-hide');
+                            const intensity = 1 + (10 - count) * 0.15;
+                            setTimeout(() => {
+                                countdownText.textContent = count;
+                                countdownText.classList.remove('smoke-hide');
+                                countdownText.classList.add('smoke-reveal');
+                                triggerSmokeBeat(intensity);
+                            }, 350);
                         } else {
                             clearInterval(countInterval);
-                            // Final number: show a big "GO" or just transition
-                            countdownText.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
-                            countdownText.textContent = 'GO';
-                            countdownText.style.transform = 'scale(1.5)';
-
+                            countdownText.classList.remove('smoke-reveal');
+                            countdownText.classList.add('smoke-hide');
                             setTimeout(() => {
-                                transitionToLanding();
-                            }, 600);
+                                countdownText.textContent = 'GO';
+                                countdownText.style.fontSize = 'clamp(5rem, 20vw, 25rem)';
+                                countdownText.classList.remove('smoke-hide');
+                                countdownText.classList.add('smoke-reveal');
+                                triggerSmokeBeat(3);
+                                setTimeout(() => transitionToLanding(), 600);
+                            }, 350);
                         }
                     }, 1000);
                 }
 
                 // ===== TRANSITION TO LANDING =====
                 function transitionToLanding() {
-                    // Flash white
                     const finalFlash = document.createElement('div');
                     finalFlash.style.cssText = 'position:fixed;inset:0;background:white;z-index:99999;opacity:0;transition:opacity 0.3s ease;';
                     document.body.appendChild(finalFlash);
-
-                    requestAnimationFrame(() => {
-                        finalFlash.style.opacity = '1';
-                    });
+                    requestAnimationFrame(() => { finalFlash.style.opacity = '1'; });
 
                     setTimeout(() => {
-                        // Remove intro overlay
                         introOverlay.style.display = 'none';
-                        countdownVideo.pause();
+                        smokeAnimating = false;
 
                         // Fade out audio
                         const fadeAudio = setInterval(() => {
@@ -703,22 +935,17 @@
                             }
                         }, 50);
 
-                        // Show main content with blur fade-in
                         mainContent.style.filter = 'blur(20px)';
                         mainContent.style.transform = 'scale(1.05)';
                         mainContent.style.opacity = '1';
-
-                        // Animate blur away for cinematic reveal
                         requestAnimationFrame(() => {
                             mainContent.style.transition = 'filter 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 1s ease-in-out';
                             mainContent.style.filter = 'blur(0px)';
                             mainContent.style.transform = 'scale(1)';
                         });
 
-                        // Fade out white flash
                         finalFlash.style.transition = 'opacity 1s ease-out';
                         finalFlash.style.opacity = '0';
-
                         setTimeout(() => {
                             finalFlash.remove();
                             introOverlay.remove();
@@ -727,7 +954,6 @@
                             mainContent.style.transition = '';
                         }, 1300);
 
-                        // Staggered text reveal animations
                         const revealEls = document.querySelectorAll('[data-reveal]');
                         revealEls.forEach(el => {
                             const delay = parseInt(el.dataset.delay || '0');
@@ -735,7 +961,6 @@
                                 el.style.transition = 'opacity 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94), filter 0.8s ease-out';
                                 el.style.transform = 'translateY(30px)';
                                 el.style.filter = 'blur(8px)';
-                                // Force reflow
                                 el.offsetHeight;
                                 el.style.opacity = '1';
                                 el.style.transform = 'translateY(0)';
